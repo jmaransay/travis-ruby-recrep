@@ -4,13 +4,13 @@ require 'time'
 require 'travis/tools/github' 	# para acceder con el login de github, no lo usamos
 require 'highline/import' 		# para ocultar contraseñas
 
-# Recuperamos los argumentos al programa, el primero (cuasi) será el usuario cuyos repositorios comprobaremos
+# Recuperamos los argumentos del programa, el primero (cuasi) será el usuario cuyos repositorios comprobaremos
 
 cuasi, rest = ARGV
 
 # Incuimos nuestro token de Travis (ojo, es diferente del de GitHub)
 
-Travis::Pro.access_token = 'YOURTRAVISCITOKEN'
+Travis::Pro.access_token = 'TOKENTRAVISCI'
 
 # Organización en la que queremos hacer las comprobaciones
 
@@ -24,6 +24,10 @@ repos_fechas = [
 	['practica-02-01-parte-01', Time.utc(2018, 11, 12, 20, 00, 00)], ['practica-02-01-parte-02', Time.utc(2018, 11, 12, 20, 00, 00)],
 	['practica-02-02-parte-01', Time.utc(2018, 11, 12, 20, 00, 00)], ['practica-02-02-parte-02', Time.utc(2018, 11, 12, 20, 00, 00)],
 ]
+
+# Nombre del tag que deberían haber generado los estudiantes en sus repositorios:
+
+tagentrega = 'entrega'
 
 # Acceso con credenciales GitHub, funciona también con autenticación en dos pasos
 
@@ -78,7 +82,12 @@ repos_fechas.each do |repository|
 		puts "- Build finished  : #{rep.last_build_finished_at}"
 		puts "- Fecha commit    : #{rep.last_build.commit.committed_at}"
 		puts "- Fecha entrega   : #{repository[1]}"
-		puts "- Plazo cumplido  : #{rep.last_build.commit.committed_at < repository[1]}"
+		if (rep.last_build.commit.committed_at.nil?)
+			puts "- Plazo cumplido  : fecha commit no disponible"
+		else  
+			puts "- Plazo cumplido  : #{rep.last_build.commit.committed_at < repository[1]}"
+		end
+
 		# Algunos detalles adicionales que omitimos:
 		# puts "- Autor           : #{rep.last_build.commit.author_name}"
    		# puts "- Commiter        : #{rep.last_build.commit.committer_name}"
@@ -91,9 +100,9 @@ repos_fechas.each do |repository|
 
 		# build = rep.builds.detect { |b| b.failed? || b.errored? }
 		
-		# Buscamos un tag de nombre 'entrega' en el repositorio del estudiante, si existe, mostramos los valores de ese commit:
+		# Buscamos un tag de nombre tagentrega en el repositorio del estudiante, si existe, mostramos los valores de ese commit:
 
-		build = rep.builds.detect { |b| b.branch_info == 'entrega' }
+		build = rep.builds.detect { |b| b.branch_info == tagentrega }
 		if (build.nil?)
 			puts "No hay un tag de nombre entrega"
 		else
@@ -104,7 +113,11 @@ repos_fechas.each do |repository|
 			puts "- Build finished  : #{build.finished_at}"
 			puts "- Fecha Commit    : #{build.commit.committed_at}"
 			puts "- Fecha entrega   : #{repository[1]}"
-			puts "- Plazo cumplido  : #{build.commit.committed_at < repository[1]}"
+			if (build.commit.commited_at.nil?)
+				puts "- Plazo cumplido: fecha commit no disponible"
+			else  
+				puts "- Plazo cumplido  : #{build.commit.committed_at < repository[1]}"
+			end
 			# Algunos detalles adicionales que omitimos:
 			# puts "- Autor           : #{build.commit.author_name}"
    			# puts "- Commiter        : #{build.commit.committer_name}"
