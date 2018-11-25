@@ -10,7 +10,7 @@ cuasi, rest = ARGV
 
 # Incuimos nuestro token de Travis (ojo, es diferente del de GitHub)
 
-Travis::Pro.access_token = 'TOKENTRAVISCI'
+Travis::Pro.access_token = 'YOURTRAVISCITOKEN'
 
 # Organización en la que queremos hacer las comprobaciones
 
@@ -111,10 +111,10 @@ repos_fechas.each do |repository|
 			puts "- Estado          : #{build.state}"
 			puts "- Build start     : #{build.started_at}"
 			puts "- Build finished  : #{build.finished_at}"
-			puts "- Fecha Commit    : #{build.commit.committed_at}"
+			puts "- Fecha commit    : #{build.commit.committed_at}"
 			puts "- Fecha entrega   : #{repository[1]}"
-			if (build.commit.commited_at.nil?)
-				puts "- Plazo cumplido: fecha commit no disponible"
+			if (build.commit.committed_at.nil?)
+			puts "- Plazo cumplido  : fecha commit no disponible"
 			else  
 				puts "- Plazo cumplido  : #{build.commit.committed_at < repository[1]}"
 			end
