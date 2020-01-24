@@ -1,6 +1,7 @@
 require 'travis'
 require 'travis/pro'
 require 'time'
+require 'proc/wait3' # para hacer pausas entre el resultado de mostrar cada repositorio
 require 'travis/tools/github' 	# para acceder con el login de github, no lo usamos
 require 'highline/import' 		# para ocultar contraseñas
 
@@ -10,19 +11,51 @@ cuasi, rest = ARGV
 
 # Incuimos nuestro token de Travis (ojo, es diferente del de GitHub)
 
-Travis::Pro.access_token = 'YOURTRAVISCITOKEN'
+Travis::Pro.access_token = 'YOURTRAVISCITOKENHERE'
 
 # Organización en la que queremos hacer las comprobaciones
 
-organization = 'POO1819'
+organization = 'POO1920'
 
 # Array de pares [nombre práctica, fecha límite de entrega]:
 
 repos_fechas = [
-	['practica-01-02-parte-01', Time.utc(2018, 10, 19, 20, 00, 00)], ['practica-01-02-parte-02', Time.utc(2018, 10, 19, 20, 00, 00)], ['practica-01-02-parte-03', Time.utc(2018, 10, 19, 20, 00, 00)],
-	['practica-01-03-parte-01', Time.utc(2018, 10, 19, 20, 00, 00)], ['practica-01-03-parte-02', Time.utc(2018, 10, 19, 20, 00, 00)],
-	['practica-02-01-parte-01', Time.utc(2018, 11, 12, 20, 00, 00)], ['practica-02-01-parte-02', Time.utc(2018, 11, 12, 20, 00, 00)],
-	['practica-02-02-parte-01', Time.utc(2018, 11, 12, 20, 00, 00)], ['practica-02-02-parte-02', Time.utc(2018, 11, 12, 20, 00, 00)],
+	['practica-01-01-parte-01',      Time.utc(2019, 11, 01, 20, 00, 00)],
+        ['practica-01-01-parte-02',      Time.utc(2019, 11, 01, 20, 00, 00)],
+	['practica-01-01-parte-03',      Time.utc(2019, 11, 01, 20, 00, 00)],
+	['practica-01-02-parte-01',      Time.utc(2019, 11, 01, 20, 00, 00)], 
+	['practica-01-02-parte-02',      Time.utc(2019, 11, 01, 20, 00, 00)], 
+	['practica-01-02-parte-03',      Time.utc(2019, 11, 01, 20, 00, 00)],
+	['practica-01-03-parte-01-c',    Time.utc(2019, 11, 01, 20, 00, 00)], 
+	['practica-01-03-parte-02-c',    Time.utc(2019, 11, 01, 20, 00, 00)],
+	['practica-01-03-parte-01-java', Time.utc(2019, 11, 01, 20, 00, 00)],
+        ['practica-01-03-parte-02-java', Time.utc(2019, 11, 01, 20, 00, 00)],
+
+	['practica-02-01-parte-01-c',    Time.utc(2019, 11, 15, 20, 00, 00)], 
+	['practica-02-01-parte-02-c',    Time.utc(2019, 11, 15, 20, 00, 00)],
+	['practica-02-01-parte-01-java', Time.utc(2019, 11, 15, 20, 00, 00)],
+        ['practica-02-01-parte-02-java', Time.utc(2019, 11, 15, 20, 00, 00)],
+	['practica-02-02-parte-01-c',    Time.utc(2019, 11, 15, 20, 00, 00)], 
+	['practica-02-02-parte-02-c',    Time.utc(2019, 11, 15, 20, 00, 00)],
+	['practica-02-02-parte-01-java', Time.utc(2019, 11, 15, 20, 00, 00)],
+        ['practica-02-02-parte-02-java', Time.utc(2019, 11, 15, 20, 00, 00)],
+
+        ['practica-03-01-parte-01-c',    Time.utc(2019, 12, 05, 20, 00, 00)],
+        ['practica-03-01-parte-01-java', Time.utc(2019, 12, 05, 20, 00, 00)],
+        ['practica-03-02-parte-01-c',    Time.utc(2019, 12, 05, 20, 00, 00)],
+        ['practica-03-02-parte-01-java', Time.utc(2019, 12, 05, 20, 00, 00)],
+        ['practica-03-02-parte-02-c',    Time.utc(2019, 12, 05, 20, 00, 00)],
+        ['practica-03-02-parte-02-java', Time.utc(2019, 12, 05, 20, 00, 00)],
+        
+	['practica-04-01-parte-01-c',    Time.utc(2019, 12, 20, 20, 00, 00)],
+        ['practica-04-01-parte-01-java', Time.utc(2019, 12, 20, 20, 00, 00)],
+        ['practica-04-01-parte-02-java', Time.utc(2019, 12, 20, 20, 00, 00)],
+        ['practica-04-02-parte-01-c',    Time.utc(2019, 12, 20, 20, 00, 00)],
+        ['practica-04-02-parte-01-java', Time.utc(2019, 12, 20, 20, 00, 00)],
+        
+	['practica-04-03-parte-01-java', Time.utc(2020, 01, 17, 20, 00, 00)],
+        ['practica-05-01-parte-01-java', Time.utc(2020, 01, 17, 20, 00, 00)],
+        
 ]
 
 # Nombre del tag que deberían haber generado los estudiantes en sus repositorios:
@@ -60,18 +93,33 @@ end
 # puts "Repositorios recuperados: #{foo.count}"
 # foo.each { |repository| puts "#{repository.slug} #{repository.last_build_state}" }
 
+# Creamos un fichero sobre el que también escribiremos la salida de este programa
+
+
+mode = "w"
+file = File.open(cuasi, mode)
+
+# file.close
+
 # Iteramos sobre el vector de prácticas y fechas límite:
 
 repos_fechas.each do |repository| 
 	
 	# Generamos el nombre del repositorio con la organización, el nombre de la práctica y la cuenta del estudiante: 
 	slug = organization + '/' + repository[0] + '-' + cuasi
-	puts "\n"
-	puts "COMPROBANDO repositorio: #{slug}"
 	
+	puts "\n"
+	puts "COMPROBANDO repositorio: https://github.com/#{slug}\n"
+	puts "Resultados compilación : https://travis-ci.com/#{slug}"
+
+
+	file.write ("\n")
+	file.write "COMPROBANDO repositorio: https://github.com/#{slug}\n"
+	file.write "Resultados compilación : https://travis-ci.com/#{slug}"
+
 	# cuidado, si find no encuentra nada, porque el estudiante no ha hecho la práctica, lanza una excepción; mirar el "raise" abajo.
 	begin
-		# Recupere
+		# Recupera
 		rep =  Travis::Pro::Repository.find(slug)
 		# puts "Repositorio #{rep.name}: "
 		# Mostramos las características principales del último build:
@@ -87,7 +135,21 @@ repos_fechas.each do |repository|
 		else  
 			puts "- Plazo cumplido  : #{rep.last_build.commit.committed_at < repository[1]}"
 		end
-
+		# Volcamos al fichero de texto:
+		file.write "\n"
+		file.write "Status de su último build: \n"
+		file.write "- Número de builds: #{rep.last_build_number} \n"
+		file.write "- Estado          : #{rep.last_build_state} \n"
+		file.write "- Build start     : #{rep.last_build_started_at} \n"
+		file.write "- Build finished  : #{rep.last_build_finished_at} \n"
+		file.write "- Fecha commit    : #{rep.last_build.commit.committed_at} \n"
+		file.write "- Fecha entrega   : #{repository[1]} \n"
+                if (rep.last_build.commit.committed_at.nil?)
+			file.write "- Plazo cumplido  : fecha commit no disponible \n"
+                else
+			file.write "- Plazo cumplido  : #{rep.last_build.commit.committed_at < repository[1]} \n"
+                end
+		
 		# Algunos detalles adicionales que omitimos:
 		# puts "- Autor           : #{rep.last_build.commit.author_name}"
    		# puts "- Commiter        : #{rep.last_build.commit.committer_name}"
@@ -118,6 +180,24 @@ repos_fechas.each do |repository|
 			else  
 				puts "- Plazo cumplido  : #{build.commit.committed_at < repository[1]}"
 			end
+		end
+
+		if (build.nil?)
+			file.write "No hay un tag de nombre entrega \n"
+                else
+			file.write "El estudiante ha generado un tag de nombre entrega: \n"
+			file.write "- Número de build : #{build.number} \n"
+			file.write "- Estado          : #{build.state} \n"
+			file.write "- Build start     : #{build.started_at} \n"
+			file.write "- Build finished  : #{build.finished_at} \n"
+			file.write "- Fecha commit    : #{build.commit.committed_at} \n"
+			file.write  "- Fecha entrega   : #{repository[1]} \n"
+                        if (build.commit.committed_at.nil?)
+				file.write "- Plazo cumplido  : fecha commit no disponible \n"
+                        else
+				file.write "- Plazo cumplido  : #{build.commit.committed_at < repository[1]} \n"
+                        end
+
 			# Algunos detalles adicionales que omitimos:
 			# puts "- Autor           : #{build.commit.author_name}"
    			# puts "- Commiter        : #{build.commit.committer_name}"
@@ -129,6 +209,10 @@ repos_fechas.each do |repository|
 		end
 	rescue
 		puts "Repositorio #{slug} no encontrado." 
+		
+		file.write "Repositorio #{slug} no encontrado. \n"
 	end
 	puts "\n"
+
+	file.write "\n"
 end
